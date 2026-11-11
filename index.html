@@ -157,7 +157,7 @@
 
   // ================== 常量 ==================
   var POINTS_PER_CNY = 2;                 // 2 积分 = 1 元
-  var STORE_KEY = 'goods-market-v1';      // localStorage 键名
+  var STORE_KEY = 'goods-market-v2';      // localStorage 键名（v2：内置默认积分价）
   var MAX_IMPORTED_KB = 600;              // 导入图片超过该大小时压缩质量逐步降低
 
   // ================== 状态 ==================
@@ -198,7 +198,7 @@
       goods.push({
         id: p.id, src: p.src, builtin: true,
         name: s.name !== undefined ? s.name : p.name,
-        price: typeof s.price === 'number' ? s.price : 0,
+        price: typeof s.price === 'number' ? s.price : (p.price || 0),
         qty: typeof s.qty === 'number' && s.qty > 0 ? s.qty : 1,  // 数量默认 1
         sold: !!s.sold
       });
@@ -210,7 +210,7 @@
       if (dataUrl) {
         goods.push({
           id: s.id, src: dataUrl, builtin: false,
-          name: s.name || '导入货品', price: s.price || 0,
+          name: s.name || '导入货品', price: (typeof s.price === 'number' ? s.price : 0),
           qty: s.qty > 0 ? s.qty : 1, sold: !!s.sold
         });
         var m = s.id.match(/img_(\d+)/);
@@ -266,7 +266,7 @@
         g.name = e.target.value.trim() || g.name; e.target.value = g.name; saveStore();
       });
       card.querySelector('.price-input').addEventListener('input', function (e) {
-        g.price = Math.max(0, parseInt(e.target.value, 10) || 0);
+        g.price = Math.round(Math.max(0, parseFloat(e.target.value) || 0));
         card.querySelector('.cny').textContent = '≈ ¥' + fmtCny(g.price);
         updateStats(); saveStore();
       });
