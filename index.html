@@ -1,0 +1,375 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>货品小铺 · 积分标价</title>
+<style>
+  /* ========== 基础变量 ========== */
+  :root {
+    --bg: #f5f6f8;
+    --card: #ffffff;
+    --text: #1f2329;
+    --muted: #8a919f;
+    --accent: #4f6ef7;
+    --accent-weak: #eef1fe;
+    --danger: #e5484d;
+    --sold: #9aa1ad;
+    --radius: 14px;
+    --shadow: 0 1px 3px rgba(0,0,0,.08), 0 4px 14px rgba(0,0,0,.06);
+  }
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body {
+    font-family: -apple-system, "PingFang SC", "Microsoft YaHei", sans-serif;
+    background: var(--bg);
+    color: var(--text);
+    min-height: 100vh;
+  }
+
+  /* ========== 顶栏 ========== */
+  header {
+    position: sticky; top: 0; z-index: 10;
+    background: rgba(255,255,255,.92);
+    backdrop-filter: blur(8px);
+    border-bottom: 1px solid #e8eaee;
+    padding: 14px 20px;
+    display: flex; flex-wrap: wrap; align-items: center; gap: 12px;
+  }
+  header h1 { font-size: 18px; margin-right: auto; white-space: nowrap; }
+  header h1 small { color: var(--muted); font-weight: normal; font-size: 12px; margin-left: 8px; }
+  .stat { font-size: 13px; color: var(--muted); white-space: nowrap; }
+  .stat b { color: var(--accent); font-size: 15px; }
+  .btn {
+    border: none; cursor: pointer; border-radius: 9px;
+    padding: 8px 14px; font-size: 13px; font-weight: 500;
+    background: var(--accent-weak); color: var(--accent);
+    transition: opacity .15s;
+  }
+  .btn:hover { opacity: .8; }
+  .btn.primary { background: var(--accent); color: #fff; }
+  .btn.danger-ghost { background: transparent; color: var(--danger); }
+
+  /* ========== 筛选 ========== */
+  .filters { display: flex; gap: 8px; padding: 14px 20px 0; }
+  .chip {
+    border: none; cursor: pointer; border-radius: 999px;
+    padding: 6px 16px; font-size: 13px; background: #e9ebef; color: var(--muted);
+  }
+  .chip.active { background: var(--accent); color: #fff; }
+
+  /* ========== 商品网格 ========== */
+  .grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(210px, 1fr));
+    gap: 16px;
+    padding: 16px 20px 40px;
+    max-width: 1200px; margin: 0 auto;
+  }
+  .card {
+    background: var(--card); border-radius: var(--radius);
+    box-shadow: var(--shadow); overflow: hidden;
+    display: flex; flex-direction: column;
+    transition: transform .15s;
+  }
+  .card:hover { transform: translateY(-2px); }
+  .thumb { position: relative; aspect-ratio: 1 / 1; background: #f0f1f3; }
+  .thumb img { width: 100%; height: 100%; object-fit: cover; display: block; }
+  .sold-badge {
+    position: absolute; top: 10px; left: 10px;
+    background: rgba(0,0,0,.55); color: #fff;
+    font-size: 12px; padding: 3px 10px; border-radius: 999px;
+    display: none;
+  }
+  /* 售出置灰 */
+  .card.sold .thumb img { filter: grayscale(1) opacity(.45); }
+  .card.sold .sold-badge { display: block; }
+  .card.sold .price-input, .card.sold .qty-num { color: var(--sold); }
+
+  .body { padding: 12px; display: flex; flex-direction: column; gap: 10px; flex: 1; }
+  .name {
+    font-size: 14px; font-weight: 600;
+    border: none; background: transparent; color: var(--text);
+    width: 100%; border-bottom: 1px dashed transparent; padding: 2px 0;
+  }
+  .name:hover, .name:focus { border-bottom-color: #d0d4db; outline: none; }
+
+  /* 价格行：积分输入 + 人民币换算 */
+  .price-row { display: flex; align-items: baseline; gap: 6px; }
+  .price-input {
+    width: 70px; font-size: 18px; font-weight: 700; color: var(--accent);
+    border: none; border-bottom: 2px solid #e8eaee; background: transparent;
+    padding: 2px 0; text-align: left;
+  }
+  .price-input:focus { outline: none; border-bottom-color: var(--accent); }
+  .unit { font-size: 12px; color: var(--muted); }
+  .cny { font-size: 12px; color: var(--muted); margin-left: auto; }
+
+  /* 数量行 */
+  .qty-row { display: flex; align-items: center; gap: 8px; }
+  .qty-row .label { font-size: 12px; color: var(--muted); }
+  .qty-btn {
+    width: 24px; height: 24px; border-radius: 7px; border: 1px solid #dfe2e8;
+    background: #fff; cursor: pointer; font-size: 14px; line-height: 1; color: var(--text);
+  }
+  .qty-btn:hover { border-color: var(--accent); color: var(--accent); }
+  .qty-num { min-width: 22px; text-align: center; font-weight: 600; font-size: 14px; }
+
+  /* 操作按钮 */
+  .actions { margin-top: auto; display: flex; gap: 8px; }
+  .actions .btn { flex: 1; text-align: center; padding: 7px 0; }
+
+  .empty {
+    grid-column: 1 / -1; text-align: center; color: var(--muted);
+    padding: 60px 0; font-size: 14px;
+  }
+
+  /* 隐藏的文件选择框 */
+  #fileInput { display: none; }
+
+  @media (max-width: 480px) {
+    .grid { grid-template-columns: repeat(auto-fill, minmax(150px, 1fr)); gap: 10px; padding: 12px 12px 32px; }
+  }
+</style>
+</head>
+<body>
+
+<header>
+  <h1>🛍️ 货品小铺 <small>2 积分 = 1 元</small></h1>
+  <span class="stat">在售 <b id="statOnSale">0</b> · 已售 <b id="statSold">0</b></span>
+  <span class="stat">在售合计 <b id="statPoints">0</b> 积分（¥<span id="statCny">0.00</span>）</span>
+  <button class="btn primary" id="importBtn">＋ 导入图片</button>
+  <button class="btn" id="resetBtn">重置数据</button>
+</header>
+
+<div class="filters">
+  <button class="chip active" data-filter="all">全部</button>
+  <button class="chip" data-filter="onsale">在售</button>
+  <button class="chip" data-filter="sold">已售</button>
+</div>
+
+<div class="grid" id="grid"></div>
+<input type="file" id="fileInput" accept="image/*" multiple>
+
+<script src="products.js"></script>
+<script>
+(function () {
+  'use strict';
+
+  // ================== 常量 ==================
+  var POINTS_PER_CNY = 2;                 // 2 积分 = 1 元
+  var STORE_KEY = 'goods-market-v1';      // localStorage 键名
+  var MAX_IMPORTED_KB = 600;              // 导入图片超过该大小时压缩质量逐步降低
+
+  // ================== 状态 ==================
+  // goods: [{ id, name, src, price(积分), qty, sold, builtin }]
+  var goods = [];
+  var currentFilter = 'all';
+  var seq = 0; // 导入图片的编号
+
+  // ================== 工具 ==================
+  function loadStore() {
+    try { return JSON.parse(localStorage.getItem(STORE_KEY)) || {}; }
+    catch (e) { return {}; }
+  }
+  function saveStore() {
+    var slim = goods.map(function (g) {
+      return { id: g.id, name: g.name, price: g.price, qty: g.qty, sold: g.sold };
+    });
+    localStorage.setItem(STORE_KEY, JSON.stringify(slim));
+  }
+  function fmtCny(points) {
+    return (points / POINTS_PER_CNY).toFixed(2);
+  }
+  function esc(s) {
+    return String(s).replace(/[&<>"]/g, function (c) {
+      return { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c];
+    });
+  }
+
+  // ================== 初始化 ==================
+  function init() {
+    var saved = loadStore();
+    var byId = {};
+    saved.forEach(function (s) { byId[s.id] = s; });
+
+    // 内置图片（images/ 目录）+ 恢复已保存的状态
+    (window.BUILTIN_PRODUCTS || []).forEach(function (p) {
+      var s = byId[p.id] || {};
+      goods.push({
+        id: p.id, src: p.src, builtin: true,
+        name: s.name !== undefined ? s.name : p.name,
+        price: typeof s.price === 'number' ? s.price : 0,
+        qty: typeof s.qty === 'number' && s.qty > 0 ? s.qty : 1,  // 数量默认 1
+        sold: !!s.sold
+      });
+    });
+    // 上次通过「导入图片」添加的图（dataURL 存在 localStorage）
+    saved.forEach(function (s) {
+      if (!s.id.startsWith('img_') || byId[s.id]) return;
+      var dataUrl = localStorage.getItem(STORE_KEY + ':img:' + s.id);
+      if (dataUrl) {
+        goods.push({
+          id: s.id, src: dataUrl, builtin: false,
+          name: s.name || '导入货品', price: s.price || 0,
+          qty: s.qty > 0 ? s.qty : 1, sold: !!s.sold
+        });
+        var m = s.id.match(/img_(\d+)/);
+        if (m) seq = Math.max(seq, parseInt(m[1], 10));
+      }
+    });
+    render();
+  }
+
+  // ================== 渲染 ==================
+  function render() {
+    var grid = document.getElementById('grid');
+    var list = goods.filter(function (g) {
+      if (currentFilter === 'onsale') return !g.sold;
+      if (currentFilter === 'sold') return g.sold;
+      return true;
+    });
+
+    grid.innerHTML = list.length ? '' :
+      '<div class="empty">暂无货品，点击右上角「导入图片」添加</div>';
+
+    list.forEach(function (g) {
+      var card = document.createElement('div');
+      card.className = 'card' + (g.sold ? ' sold' : '');
+      card.innerHTML =
+        '<div class="thumb">' +
+          '<img src="' + g.src + '" alt="' + esc(g.name) + '" loading="lazy">' +
+          '<span class="sold-badge">已售出</span>' +
+        '</div>' +
+        '<div class="body">' +
+          '<input class="name" value="' + esc(g.name) + '" title="点击修改名称">' +
+          '<div class="price-row">' +
+            '<input class="price-input" type="number" min="0" step="1" value="' + g.price + '" title="输入积分">' +
+            '<span class="unit">积分</span>' +
+            '<span class="cny">≈ ¥' + fmtCny(g.price) + '</span>' +
+          '</div>' +
+          '<div class="qty-row">' +
+            '<span class="label">数量</span>' +
+            '<button class="qty-btn qty-minus">−</button>' +
+            '<span class="qty-num">' + g.qty + '</span>' +
+            '<button class="qty-btn qty-plus">＋</button>' +
+          '</div>' +
+          '<div class="actions">' +
+            (g.sold
+              ? '<button class="btn act-toggle">恢复在售</button>'
+              : '<button class="btn primary act-toggle">标记售出</button>') +
+            '<button class="btn danger-ghost act-del">删除</button>' +
+          '</div>' +
+        '</div>';
+
+      // ---- 事件绑定 ----
+      card.querySelector('.name').addEventListener('change', function (e) {
+        g.name = e.target.value.trim() || g.name; e.target.value = g.name; saveStore();
+      });
+      card.querySelector('.price-input').addEventListener('input', function (e) {
+        g.price = Math.max(0, parseInt(e.target.value, 10) || 0);
+        card.querySelector('.cny').textContent = '≈ ¥' + fmtCny(g.price);
+        updateStats(); saveStore();
+      });
+      card.querySelector('.qty-minus').addEventListener('click', function () {
+        if (g.qty > 1) { g.qty--; card.querySelector('.qty-num').textContent = g.qty; updateStats(); saveStore(); }
+      });
+      card.querySelector('.qty-plus').addEventListener('click', function () {
+        g.qty++; card.querySelector('.qty-num').textContent = g.qty; updateStats(); saveStore();
+      });
+      card.querySelector('.act-toggle').addEventListener('click', function () {
+        g.sold = !g.sold; saveStore(); render();
+      });
+      card.querySelector('.act-del').addEventListener('click', function () {
+        if (!confirm('确定删除「' + g.name + '」？')) return;
+        goods = goods.filter(function (x) { return x !== g; });
+        if (!g.builtin) localStorage.removeItem(STORE_KEY + ':img:' + g.id);
+        saveStore(); render();
+      });
+
+      grid.appendChild(card);
+    });
+    updateStats();
+  }
+
+  // ================== 顶栏统计 ==================
+  function updateStats() {
+    var onSale = 0, sold = 0, points = 0;
+    goods.forEach(function (g) {
+      if (g.sold) { sold++; } else { onSale++; points += g.price * g.qty; }
+    });
+    document.getElementById('statOnSale').textContent = onSale;
+    document.getElementById('statSold').textContent = sold;
+    document.getElementById('statPoints').textContent = points;
+    document.getElementById('statCny').textContent = fmtCny(points);
+  }
+
+  // ================== 导入图片 ==================
+  // 超大图片降质压缩到 600KB 以内，避免撑爆 localStorage
+  function compressToDataUrl(file, cb) {
+    var reader = new FileReader();
+    reader.onload = function () {
+      var img = new Image();
+      img.onload = function () {
+        var maxSide = 900, q = 0.8;
+        var s = Math.min(1, maxSide / Math.max(img.width, img.height));
+        var canvas = document.createElement('canvas');
+        canvas.width = Math.round(img.width * s);
+        canvas.height = Math.round(img.height * s);
+        canvas.getContext('2d').drawImage(img, 0, 0, canvas.width, canvas.height);
+        var url;
+        do {
+          url = canvas.toDataURL('image/jpeg', q);
+          q -= 0.15;
+        } while (url.length / 1024 > MAX_IMPORTED_KB && q > 0.3);
+        cb(url);
+      };
+      img.src = reader.result;
+    };
+    reader.readAsDataURL(file);
+  }
+
+  document.getElementById('importBtn').addEventListener('click', function () {
+    document.getElementById('fileInput').click();
+  });
+  document.getElementById('fileInput').addEventListener('change', function (e) {
+    var files = Array.prototype.slice.call(e.target.files);
+    var pending = files.length;
+    if (!pending) return;
+    files.forEach(function (f) {
+      compressToDataUrl(f, function (url) {
+        seq++;
+        var id = 'img_' + String(seq).padStart(2, '0');
+        goods.push({
+          id: id, src: url, builtin: false,
+          name: '导入货品 ' + seq, price: 0, qty: 1, sold: false
+        });
+        localStorage.setItem(STORE_KEY + ':img:' + id, url);
+        if (--pending === 0) { saveStore(); render(); }
+      });
+    });
+    e.target.value = '';
+  });
+
+  // ================== 筛选 & 重置 ==================
+  document.querySelectorAll('.chip').forEach(function (chip) {
+    chip.addEventListener('click', function () {
+      document.querySelectorAll('.chip').forEach(function (c) { c.classList.remove('active'); });
+      chip.classList.add('active');
+      currentFilter = chip.dataset.filter;
+      render();
+    });
+  });
+  document.getElementById('resetBtn').addEventListener('click', function () {
+    if (!confirm('重置将清除所有标价、售出状态和导入的图片，确定？')) return;
+    goods.forEach(function (g) {
+      if (!g.builtin) localStorage.removeItem(STORE_KEY + ':img:' + g.id);
+    });
+    localStorage.removeItem(STORE_KEY);
+    location.reload();
+  });
+
+  init();
+})();
+</script>
+</body>
+</html>
