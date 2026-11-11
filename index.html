@@ -168,8 +168,10 @@
 
   // ================== 工具 ==================
   function loadStore() {
-    try { return JSON.parse(localStorage.getItem(STORE_KEY)) || {}; }
-    catch (e) { return {}; }
+    try {
+      var v = JSON.parse(localStorage.getItem(STORE_KEY));
+      return Array.isArray(v) ? v : [];   // 必须返回数组，{} 会让 saved.forEach 报错
+    } catch (e) { return []; }
   }
   function saveStore() {
     var slim = goods.map(function (g) {
