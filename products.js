@@ -38,5 +38,10 @@ window.BUILTIN_PRODUCTS = [
   { "id": "img_24", "src": "images/img_24.jpg", "name": "Hello Kitty 荣耀平板保护套（蚕丝纹全包）", "price": 45 },
   { "id": "img_25", "src": "images/img_25.jpg", "name": "联想异能者荣耀平板保护套（360°旋转带笔槽）", "price": 58 },
   { "id": "img_26", "src": "images/img_26.jpg", "name": "新三丽鸥荣耀V9平板保护套（蚕丝纹支架）", "price": 42 },
-  { "id": "img_27", "src": "images/img_27.jpg", "name": "凯蒂猫荣耀V9平板保护套（书本版）", "price": 54 }
+  { "id": "img_27", "src": "images/img_27.jpg", "name": "凯蒂猫荣耀V9平板保护套（书本版）", "price": 54 },
+  { "id": "img_28", "src": "images/img_28.jpg", "name": "迷你iPhone手工材料包（桌面课间玩具）", "price": 17 },
+  { "id": "img_29", "src": "images/img_29.jpg", "name": "正版叶罗丽迷你宝石盒子盲盒套装", "price": 44 },
+  { "id": "img_30", "src": "images/img_30.jpg", "name": "三丽鸥录音电子架子鼓钥匙扣", "price": 11 },
+  { "id": "img_31", "src": "images/img_31.jpg", "name": "娃屋迷你文具盒模型（微缩食玩配件）", "price": 8 },
+  { "id": "img_32", "src": "images/img_32.jpg", "name": "Inamazy泡泡书图鉴双层收纳手工拼贴", "price": 26 }
 ];
